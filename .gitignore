@@ -1,0 +1,12 @@
+# Large data files (>50MB)
+final_dataset_view.json
+final_dataset_fixed.json
+dataset.json
+dataset.csv
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+.virtual_documents/
+
+# Data folder
+data/
