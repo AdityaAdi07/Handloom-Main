@@ -14,6 +14,9 @@ A high-fidelity, real-time, physics-based Digital Twin of a traditional Handloom
 
 ## 🏗️ Architecture & Digital Twin Setup
 
+<img width="2816" height="1536" alt="Gemini_Generated_Image_jgfk3jjgfk3jjgfk" src="https://github.com/user-attachments/assets/2a7ae104-404d-46c0-9c43-1b11b00678b9" />
+
+
 The architecture of this Digital Twin is split into three primary layers:
 
 ### 1. Data Ingestion & Context Management (FIWARE)
@@ -21,6 +24,7 @@ The core IoT backbone utilizes the **FIWARE ecosystem**:
 - **Orion Context Broker**: Acts as the central hub for the system's context information, maintaining the live state of the loom entity (`Loom:01`).
 - **MongoDB**: Used by Orion to persist context data.
 - Sensors or IoT simulators push JSON payloads to Orion via the NGSI-v2 API, representing machine metrics and fabric patterns.
+  
 
 ### 2. Middleware (Relay API)
 A lightweight **Python Flask Relay** (`localhost:5050/twin`) bridges the gap between the FIWARE backend and the frontend. It polls Orion (`localhost:1026`), parses the NGSI-v2 payload, and serves a cleaned, minimal JSON object to the frontend client. This bypasses browser CORS restrictions and reduces frontend computational load.
@@ -30,6 +34,10 @@ The frontend (`index.html` & `weave.html`) is built purely with Native JS, HTML,
 - **Dashboard (`index.html`)**: The macroscopic view of the loom frame, featuring live dynamic gauge bars, historic canvas charts, glowing bounding boxes, rulers, and laser defect scanners.
 - **Thread Core (`weave.html`)**: The microscopic interactive view simulating the mechanical interlacing of warp and weft threads based on matrix arrays.
 
+<img width="1911" height="964" alt="Screenshot 2026-05-06 164157" src="https://github.com/user-attachments/assets/a7f3d0b8-5674-49d5-90ca-bad10aa42aa3" />
+<img width="1914" height="968" alt="Screenshot 2026-05-06 164140" src="https://github.com/user-attachments/assets/19727690-e1d4-4ada-a69a-af0e8347a1e7" />
+
+
 ### 🧮 Algorithms & Physics Applied
 - **Catmull-Rom Splines**: Used to generate the continuous tubular 3D geometry for the weft threads. A mathematical curve drops the spline vertices down proportionally to `(5.0 - live_tension)`, visually simulating real-world thread sag and tension loss.
 - **Linear Interpolation (Lerp)**: Used for the smooth transition animations of the mechanical shed (the alternating up/down of warp threads) bound by `MAX_SHED_ANGLE`.
@@ -38,6 +46,7 @@ The frontend (`index.html` & `weave.html`) is built purely with Native JS, HTML,
 ---
 
 ## 🤖 AI & Predictive Models Architecture
+<img width="1918" height="971" alt="Screenshot 2026-05-06 164133" src="https://github.com/user-attachments/assets/f5187a43-480c-4ef7-9ac3-a7ddea701fd2" />
 
 The project integrates a comprehensive suite of machine learning models to power the predictive aspects of the Digital Twin, forming a complete **Digital Twin + AI Optimization System**.
 
