@@ -1,4 +1,18 @@
 # Digital Twin API Test Cases
+.\venv\Scripts\activate
+
+# First, run data preprocessing
+python run_preprocessing.py
+
+# Next, train the models
+python train_all.py
+
+# Optionally, test the predictions to make sure it works
+python test_preds.py
+
+uvicorn api.main:app --reload
+
+
 
 This file contains extreme, true-to-dataset test cases for each of your 5 endpoints. You can copy and paste the JSON blocks directly into the Swagger UI (`http://127.0.0.1:8000/docs`).
 

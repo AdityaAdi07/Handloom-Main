@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sandbox Control Panel — Handloom Digital Twin</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="sandbox.css"/>
+  <style>
+    body { margin: 0; padding: 0; }
+    #loading {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #080c10; color: #00d4ff;
+      font-family: 'JetBrains Mono', monospace; font-size: 14px;
+      z-index: 9999;
+    }
+    #loading.hidden { display: none; }
+    #loading.error { color: #ff3040; }
+  </style>
+</head>
+<body>
+  <div id="loading">Loading Sandbox...</div>
+  <div id="sandbox-app"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    window.addEventListener('error', function(e) {
+      console.error('[Error]', e.error || e.message);
+      var loading = document.getElementById('loading');
+      if (loading) {
+        loading.textContent = 'Error: ' + (e.error?.message || e.message);
+        loading.classList.add('error');
+      }
+    });
+  </script>
+  <script src="core/SandboxState.js"></script>
+  <script src="core/EventBus.js"></script>
+  <script src="core/SimulationLoop.js"></script>
+  <script src="core/ParameterEngine.js"></script>
+  <script src="twin/LoomScene.js"></script>
+  <script src="twin/LoomModel.js"></script>
+  <script src="twin/ShuttleController.js"></script>
+  <script src="twin/ThreadSimulator.js"></script>
+  <script src="twin/EffectsController.js"></script>
+  <script src="panels/ControlPanel.js"></script>
+  <script src="panels/PredictionPanel.js"></script>
+  <script src="panels/Terminal.js"></script>
+  <script src="panels/PresetManager.js"></script>
+  <script src="panels/TelemetryDashboard.js"></script>
+  <script src="panels/PatternImporter.js"></script>
+  <script src="panels/PatternPredictor.js"></script>
+  <script src="panels/FabricSizeEstimator.js"></script>
+  <script src="panels/OptimizationEngine.js"></script>
+  <script src="panels/AnalyticsEngine.js"></script>
+  <script src="panels/AIntelligencePanel.js"></script>
+  <script src="api/FlaskRelay.js"></script>
+  <script src="api/SandboxIsolation.js"></script>
+  <script src="utils/MathUtils.js"></script>
+  <script src="utils/Formatters.js"></script>
+  <script src="sandbox.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var loading = document.getElementById('loading');
+      try {
+        var app = new SandboxApp();
+        app.init();
+        loading.classList.add('hidden');
+        window.sandboxApp = app;
+        console.log('[Sandbox] Initialized');
+      } catch(e) {
+        console.error('[Sandbox] Init error:', e);
+        loading.textContent = 'Error: ' + e.message;
+        loading.classList.add('error');
+      }
+    });
+  </script>
+</body>
+</html>

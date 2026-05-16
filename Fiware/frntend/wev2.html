@@ -133,6 +133,34 @@
     padding:8px 18px;border-radius:6px;z-index:20; text-align:center;
   }
 
+  /* ── LIGHT MODE OVERRIDES ── */
+  body.light-mode {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --border: #d1d5db;
+    --accent: #0077ff;
+    --accent2: #16a34a;
+    --warn: #f59e0b;
+    --fault: #ef4444;
+    --text: #1a202c;
+    --muted: #6b7280;
+    background: #e8ecf1;
+  }
+  body.light-mode #topbar { background: rgba(255, 255, 255, 0.85); border-bottom: 1px solid rgba(0, 0, 0, 0.1); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); }
+  body.light-mode #topbar .logo { color: #1a202c; text-shadow: none; }
+  body.light-mode #topbar .logo span { color: var(--accent); }
+  body.light-mode #topbar .ts { color: var(--muted); }
+  body.light-mode .card { background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05); }
+  body.light-mode .card-title { color: var(--accent); border-bottom-color: rgba(0,0,0,0.1); }
+  body.light-mode #status-pill { background: #f3f4f6; border-color: rgba(0,0,0,0.1); box-shadow: none; color: var(--text); }
+  body.light-mode #bottombar { background: rgba(255, 255, 255, 0.85); border-top: 1px solid rgba(0, 0, 0, 0.1); box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.05); }
+  body.light-mode #matrix-grid { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+  body.light-mode .matrix-cell { background: #f3f4f6; border-color: rgba(0,0,0,0.05); }
+  body.light-mode .matrix-cell.active-val { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 8px rgba(0,119,255,0.3); }
+  body.light-mode .matrix-cell.scan-glow { box-shadow: 0 0 15px var(--accent), 0 0 30px var(--accent); background: #fff !important; color: #000; }
+  body.light-mode .matrix-row.active-row .matrix-cell { border-color: var(--accent2); }
+  body.light-mode .matrix-row.active-row .matrix-cell.active-val { background: var(--accent2); box-shadow: 0 0 10px rgba(22,163,74,0.4); color: #fff;}
+  body.light-mode canvas#cross-sec-canvas, body.light-mode canvas#fabric-preview-canvas { background: rgba(255,255,255,0.8) !important; border-color: rgba(0,0,0,0.1) !important; }
 </style>
 </head>
 <body>
@@ -161,16 +189,31 @@
     <div id="matrix-container">
       <!-- Grid injected via JS -->
     </div>
+    
+    <div class="card-title" style="margin-top:20px;">Current Weft Path (Front)</div>
+    <div style="font-size:9px;color:var(--muted);margin-bottom:6px;font-family:var(--font-mono)">
+      Cross-section of weft thread through active warps.
+    </div>
+    <canvas id="cross-sec-canvas" height="60" style="width:100%; border:1px solid rgba(255,255,255,0.05); border-radius:4px; background:rgba(0,0,0,0.2);"></canvas>
+
+    <div class="card-title" style="margin-top:20px;">Woven Surface Blueprint</div>
+    <div style="font-size:9px;color:var(--muted);margin-bottom:6px;font-family:var(--font-mono)">
+      Cyan = Warp Visible (UP) | Green = Weft Visible (DOWN)
+    </div>
+    <canvas id="fabric-preview-canvas" height="300" style="width:100%; border:1px solid rgba(255,255,255,0.05); border-radius:4px; background:rgba(0,0,0,0.4);"></canvas>
   </div>
 </div>
 
 <!-- RIGHT PANEL -->
 <div id="right-panel">
   <div class="card">
-    <div class="card-title">Live Logic State</div>
+    <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        Live Logic State
+        <button id="speed-btn" style="background:transparent; border:1px solid var(--accent); color:var(--accent); font-family:var(--font-mono); font-size:9px; padding:2px 6px; border-radius:3px; cursor:pointer; transition:all 0.2s;">Speed 1x</button>
+    </div>
     <div class="dp-row"><span class="dp-label">Pattern ID</span><span class="dp-val" id="v-pid">--</span></div>
     <div class="dp-row"><span class="dp-label">Active Row (Step)</span><span class="dp-val" id="v-row">0</span></div>
-    <div class="dp-row"><span class="dp-label">Shuttle Direction</span><span class="dp-val" id="v-dir">RIGHT 👉</span></div>
+    <div class="dp-row"><span class="dp-label">Shuttle Direction</span><span class="dp-val" id="v-dir">RIGHT </span></div>
     <div class="dp-row"><span class="dp-label">Weft Count</span><span class="dp-val" id="v-weft-c">0</span></div>
   </div>
 
@@ -189,6 +232,7 @@
 <div id="relay-banner">⚠ Demo Mode — Real relay unavailable</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="texture_b64.js"></script>
 <script>
 const container = document.getElementById('canvas-container');
 const W = () => window.innerWidth, H = () => window.innerHeight;
@@ -255,8 +299,8 @@ scene.add(rim);
 
 // CORE VISUALIZATION SETUP
 const THREAD_RADIUS = 0.02;
-const WARP_COUNT = 9; // Number of vertical threads to show cleanly
-const SPACING = 0.3; // Space between warps
+const WARP_COUNT = 15; // Number of vertical threads to show cleanly
+const SPACING = 0.25; // Space between warps
 
 const MAT = {
   warpUp: new THREE.MeshStandardMaterial({color:0x00e5ff, roughness:0.4, metalness:0.3}),
@@ -329,6 +373,16 @@ scene.add(reedGroup);
 const fabricGroup = new THREE.Group();
 scene.add(fabricGroup);
 const pastWefts = [];
+const textureLoader = new THREE.TextureLoader();
+const sareeTex = textureLoader.load(sareeTextureB64);
+sareeTex.wrapS = THREE.RepeatWrapping;
+sareeTex.wrapT = THREE.RepeatWrapping;
+const sharedPrintedMaterial = new THREE.MeshStandardMaterial({map: sareeTex, side: THREE.DoubleSide, roughness: 0.6});
+
+const fCanvasImg = new Image();
+fCanvasImg.src = sareeTextureB64;
+
+let globalSpeedMult = 1;
 
 // TWIN STATE
 let twin = {
@@ -348,6 +402,7 @@ let weavePhase = 0; // 0 to 1 cycle
 let shuttleDir = 1; // 1 (L->R) or -1 (R->L)
 let totalWefts = 0;
 let fabricZShift = 0;
+const fabricHistory2D = [];
 
 // REBUILD MATRIX DOM
 function renderMatrixDOM() {
@@ -380,7 +435,7 @@ function updateHUD() {
     
     document.getElementById('v-pid').textContent = twin.pattern_id || 'UNKNOWN';
     document.getElementById('v-row').textContent = `Row ${currentWeaveStep}`;
-    document.getElementById('v-dir').textContent = shuttleDir === 1 ? 'RIGHT 👉' : '👈 LEFT';
+    document.getElementById('v-dir').textContent = shuttleDir === 1 ? 'RIGHT --> ' : '<-- LEFT';
     document.getElementById('v-weft-c').textContent = totalWefts;
     document.getElementById('v-speed').textContent = Math.round(twin.speed) + ' RPM';
     document.getElementById('v-tension').textContent = (twin.warp_tension||0).toFixed(1) + ' N';
@@ -412,6 +467,90 @@ function updateHUD() {
         cellIndex = Math.max(0, Math.min(WARP_COUNT - 1, cellIndex));
         const activeCell = document.querySelector(`.matrix-cell.row-${currentWeaveStep}.col-${cellIndex}`);
         if(activeCell) activeCell.classList.add('scan-glow');
+    }
+    
+    draw2DVisuals();
+}
+
+function draw2DVisuals() {
+    const cCanvas = document.getElementById('cross-sec-canvas');
+    if(!cCanvas) return;
+    const cCtx = cCanvas.getContext('2d');
+    const w = cCanvas.offsetWidth; 
+    const h = cCanvas.height;
+    cCanvas.width = w; 
+    
+    cCtx.clearRect(0,0,w,h);
+    
+    const rowData = twin.pattern_matrix[currentWeaveStep];
+    if(!rowData) return;
+    
+    const cols = Math.min(rowData.length, WARP_COUNT);
+    const spacing = w / (cols + 1);
+    
+    const warpYUp = 15;
+    const warpYDown = 45;
+    const isLight = document.body.classList.contains('light-mode');
+    
+    for(let i=0; i<cols; i++) {
+        const val = rowData[i];
+        const x = spacing * (i + 1);
+        const y = val === 1 ? warpYUp : warpYDown;
+        
+        cCtx.beginPath();
+        cCtx.arc(x, y, 4, 0, Math.PI*2);
+        cCtx.fillStyle = val === 1 ? (isLight ? '#0077ff' : '#00e5ff') : (isLight ? '#cbd5e1' : '#4a5568');
+        cCtx.fill();
+        
+        cCtx.strokeStyle = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.05)';
+        cCtx.beginPath(); cCtx.moveTo(x, 0); cCtx.lineTo(x, h); cCtx.stroke();
+    }
+    
+    cCtx.beginPath();
+    cCtx.moveTo(0, h/2);
+    for(let i=0; i<cols; i++) {
+        const val = rowData[i];
+        const x = spacing * (i + 1);
+        const weftY = val === 1 ? warpYDown : warpYUp; 
+        cCtx.lineTo(x, weftY);
+    }
+    cCtx.lineTo(w, h/2);
+    
+    cCtx.strokeStyle = isLight ? '#16a34a' : '#76ff03'; // weft color
+    cCtx.lineWidth = 3;
+    cCtx.lineJoin = 'round';
+    cCtx.stroke();
+    
+    const fCanvas = document.getElementById('fabric-preview-canvas');
+    if(!fCanvas) return;
+    const fCtx = fCanvas.getContext('2d');
+    const fw = fCanvas.offsetWidth;
+    const fh = fCanvas.height;
+    fCanvas.width = fw;
+    
+    fCtx.clearRect(0,0,fw,fh);
+    
+    if (fCanvasImg.complete) {
+        const unrollSpeed = 2.0; 
+        const scanY = (totalWefts * unrollSpeed) % fh;
+        
+        // Draw stationary image
+        fCtx.drawImage(fCanvasImg, 0, 0, fw, fh);
+        
+        // Darken unprinted area below the scan line
+        fCtx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        fCtx.fillRect(0, scanY, fw, fh - scanY);
+        
+        // Draw strong prominent red line at current printing position
+        fCtx.beginPath();
+        fCtx.moveTo(0, scanY);
+        fCtx.lineTo(fw, scanY);
+        fCtx.strokeStyle = '#ff1744';
+        fCtx.lineWidth = 3;
+        fCtx.shadowColor = '#ff1744';
+        fCtx.shadowBlur = 12;
+        fCtx.stroke();
+        fCtx.shadowBlur = 0; // reset
     }
 }
 
@@ -468,7 +607,7 @@ function animate(){
   
   if (isRunning && twin.speed > 0 && twin.pattern_matrix && twin.pattern_matrix.length > 0) {
       // 🐢 Slow motion for detailed observation
-      const cycleTime = (twin.speed / 100) * 0.15; // slow speed multiplier
+      const cycleTime = (twin.speed / 100) * 0.15 * globalSpeedMult; // slow speed multiplier
       weavePhase += delta * cycleTime;
       
       // CYCLE WRAP -> DEPOSIT WEFT
@@ -478,6 +617,9 @@ function animate(){
           currentWeaveStep = (currentWeaveStep + 1) % twin.pattern_matrix.length;
           shuttleDir *= -1;
           totalWefts++;
+          
+          fabricHistory2D.unshift([...oldRowData]);
+          if(fabricHistory2D.length > 50) fabricHistory2D.pop();
           
           // Phase 6: True Fabric Interlacing & Tension & Defect
           const cols = oldRowData.length;
@@ -505,13 +647,25 @@ function animate(){
           }
           pts.push(new THREE.Vector3((WARP_COUNT*SPACING)/2 + 0.2, 0, 0));
           
+          const rowHeight = 0.08;
+          const weftGeo = new THREE.PlaneGeometry(WARP_COUNT * SPACING + 0.4, rowHeight);
+          weftGeo.rotateX(-Math.PI/2);
+          
+          const vStart = (totalWefts * rowHeight) % 10.0 / 10.0;
+          const vEnd = ((totalWefts + 1) * rowHeight) % 10.0 / 10.0;
+          const uvs = weftGeo.attributes.uv.array;
+          uvs[1] = vEnd; uvs[3] = vEnd; uvs[5] = vStart; uvs[7] = vStart;
+          weftGeo.attributes.uv.needsUpdate = true;
+          
+          const weft = new THREE.Mesh(weftGeo, sharedPrintedMaterial);
+          weft.position.z = 0.01; // slight offset to prevent z-fighting if threads overlap
+          
           const curve = new THREE.CatmullRomCurve3(pts);
-          const tubeGeo = new THREE.TubeGeometry(curve, WARP_COUNT * 2, THREAD_RADIUS * 0.8, 8, false);
-          
-          let weftMat = MAT.weft;
-          if(brokenSegment) weftMat = new THREE.MeshStandardMaterial({color:0xff1744, roughness:0.5});
-          
-          const weft = new THREE.Mesh(tubeGeo, weftMat);
+          const tubeGeo = new THREE.TubeGeometry(curve, WARP_COUNT * 2, THREAD_RADIUS * 0.3, 4, false);
+          let threadMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent:true, opacity:0.1});
+          if(brokenSegment) threadMat = new THREE.MeshStandardMaterial({color:0xff1744, roughness:0.5});
+          const threadMesh = new THREE.Mesh(tubeGeo, threadMat);
+          weft.add(threadMesh);
           weft.userData.baseZ = fabricZShift; // lock relative position
           fabricGroup.add(weft);
           pastWefts.push(weft);
@@ -625,27 +779,17 @@ updateHUD();
 // Dynamic Overwrite for Depiction / Demonstration
 // Structured weave designs switching predictably
 const structuralPatterns = [
-    // Twill 2/2 Array Map
     [
-        [1,1,0,0,1,1,0,0,1],
-        [0,1,1,0,0,1,1,0,0],
-        [0,0,1,1,0,0,1,1,0],
-        [1,0,0,1,1,0,0,1,1]
+        [1,1,0,0,1,1,0,0,1,1,0,0,1,1,0],
+        [0,1,1,0,0,1,1,0,0,1,1,0,0,1,1],
+        [0,0,1,1,0,0,1,1,0,0,1,1,0,0,1],
+        [1,0,0,1,1,0,0,1,1,0,0,1,1,0,0]
     ],
-    // Basket 2x2 Array Map
     [
-        [1,1,0,0,1,1,0,0,1],
-        [1,1,0,0,1,1,0,0,1],
-        [0,0,1,1,0,0,1,1,0],
-        [0,0,1,1,0,0,1,1,0]
-    ],
-    // Satin 4/1 Array Map
-    [
-        [1,0,0,0,0,1,0,0,0],
-        [0,0,1,0,0,0,0,1,0],
-        [0,0,0,0,1,0,0,0,0],
-        [0,1,0,0,0,0,1,0,0],
-        [0,0,0,1,0,0,0,0,1]
+        [1,1,0,0,1,1,0,0,1,1,0,0,1,1,0],
+        [1,1,0,0,1,1,0,0,1,1,0,0,1,1,0],
+        [0,0,1,1,0,0,1,1,0,0,1,1,0,0,1],
+        [0,0,1,1,0,0,1,1,0,0,1,1,0,0,1]
     ]
 ];
 let activePatternIndex = 0;
@@ -662,6 +806,41 @@ setInterval(() => {
     }
     renderMatrixDOM();
 }, 20000); // 20-second blocks for each pattern observation
+
+// Sync theme with parent via postMessage and URL params
+function applyTheme(isLight) {
+    if (isLight) {
+        document.body.classList.add('light-mode');
+        scene.background.setHex(0xffffff);
+        scene.fog.color.setHex(0xffffff);
+    } else {
+        document.body.classList.remove('light-mode');
+        scene.background.setHex(0x040e29);
+        scene.fog.color.setHex(0x040e29);
+    }
+    draw2DVisuals();
+}
+
+// 1. Apply on load from URL param
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('theme') === 'light') {
+    applyTheme(true);
+}
+
+// 2. Listen for live updates
+window.addEventListener('message', (event) => {
+    if (event.data && event.data.theme) {
+        applyTheme(event.data.theme === 'light');
+    }
+});
+
+// Speed Button Logic
+document.getElementById('speed-btn').addEventListener('click', function() {
+    globalSpeedMult = globalSpeedMult === 1 ? 2 : 1;
+    this.textContent = globalSpeedMult === 1 ? "Speed 1x" : "Speed 2x";
+    this.style.background = globalSpeedMult === 1 ? "transparent" : "var(--accent)";
+    this.style.color = globalSpeedMult === 1 ? "var(--accent)" : "#000";
+});
 
 </script>
 </body>

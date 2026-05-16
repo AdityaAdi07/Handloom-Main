@@ -183,23 +183,17 @@
 <div id="left-panel">
   <div class="card" style="flex:1;">
     <div class="card-title">Weaving Design (Matrix)</div>
-    <div style="font-size:10px;color:var(--muted);margin-bottom:10px;font-family:var(--font-mono)">
-      1 = WARP UP (Cyan)<br/>0 = WARP DOWN (Grey)
-    </div>
+   
     <div id="matrix-container">
       <!-- Grid injected via JS -->
     </div>
     
     <div class="card-title" style="margin-top:20px;">Current Weft Path (Front)</div>
-    <div style="font-size:9px;color:var(--muted);margin-bottom:6px;font-family:var(--font-mono)">
-      Cross-section of weft thread through active warps.
-    </div>
+   
     <canvas id="cross-sec-canvas" height="60" style="width:100%; border:1px solid rgba(255,255,255,0.05); border-radius:4px; background:rgba(0,0,0,0.2);"></canvas>
 
     <div class="card-title" style="margin-top:20px;">Woven Surface Blueprint</div>
-    <div style="font-size:9px;color:var(--muted);margin-bottom:6px;font-family:var(--font-mono)">
-      Cyan = Warp Visible (UP) | Green = Weft Visible (DOWN)
-    </div>
+    
     <canvas id="fabric-preview-canvas" height="300" style="width:100%; border:1px solid rgba(255,255,255,0.05); border-radius:4px; background:rgba(0,0,0,0.4);"></canvas>
   </div>
 </div>
@@ -207,7 +201,10 @@
 <!-- RIGHT PANEL -->
 <div id="right-panel">
   <div class="card">
-    <div class="card-title">Live Logic State</div>
+    <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        Live Logic State
+        <button id="speed-btn" style="background:transparent; border:1px solid var(--accent); color:var(--accent); font-family:var(--font-mono); font-size:9px; padding:2px 6px; border-radius:3px; cursor:pointer; transition:all 0.2s;">Speed 1x</button>
+    </div>
     <div class="dp-row"><span class="dp-label">Pattern ID</span><span class="dp-val" id="v-pid">--</span></div>
     <div class="dp-row"><span class="dp-label">Active Row (Step)</span><span class="dp-val" id="v-row">0</span></div>
     <div class="dp-row"><span class="dp-label">Shuttle Direction</span><span class="dp-val" id="v-dir">RIGHT </span></div>
@@ -229,6 +226,7 @@
 <div id="relay-banner">⚠ Demo Mode — Real relay unavailable</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="texture_b64.js"></script>
 <script>
 const container = document.getElementById('canvas-container');
 const W = () => window.innerWidth, H = () => window.innerHeight;
@@ -295,8 +293,8 @@ scene.add(rim);
 
 // CORE VISUALIZATION SETUP
 const THREAD_RADIUS = 0.02;
-const WARP_COUNT = 9; // Number of vertical threads to show cleanly
-const SPACING = 0.3; // Space between warps
+const WARP_COUNT = 15; // Number of vertical threads to show cleanly
+const SPACING = 0.25; // Space between warps
 
 const MAT = {
   warpUp: new THREE.MeshStandardMaterial({color:0x00e5ff, roughness:0.4, metalness:0.3}),
@@ -369,6 +367,16 @@ scene.add(reedGroup);
 const fabricGroup = new THREE.Group();
 scene.add(fabricGroup);
 const pastWefts = [];
+const textureLoader = new THREE.TextureLoader();
+const sareeTex = textureLoader.load(sareeTextureB64);
+sareeTex.wrapS = THREE.RepeatWrapping;
+sareeTex.wrapT = THREE.RepeatWrapping;
+const sharedPrintedMaterial = new THREE.MeshStandardMaterial({map: sareeTex, side: THREE.DoubleSide, roughness: 0.6});
+
+const fCanvasImg = new Image();
+fCanvasImg.src = sareeTextureB64;
+
+let globalSpeedMult = 1;
 
 // TWIN STATE
 let twin = {
@@ -516,18 +524,27 @@ function draw2DVisuals() {
     
     fCtx.clearRect(0,0,fw,fh);
     
-    const cellSize = Math.floor(fw / WARP_COUNT);
-    const xOff = (fw - WARP_COUNT*cellSize)/2;
-    for(let r=0; r<fabricHistory2D.length; r++) {
-        const row = fabricHistory2D[r];
-        const yLine = r * cellSize; 
-        if(yLine > fh) break;
+    if (fCanvasImg.complete) {
+        const unrollSpeed = 2.0; 
+        const scanY = (totalWefts * unrollSpeed) % fh;
         
-        for(let c=0; c<WARP_COUNT; c++) {
-            const val = row[c % row.length];
-            fCtx.fillStyle = val === 1 ? (isLight ? '#0077ff' : '#00e5ff') : (isLight ? '#16a34a' : '#228811'); 
-            fCtx.fillRect(c * cellSize + xOff + 1, yLine + 1, cellSize-2, cellSize-2);
-        }
+        // Draw stationary image
+        fCtx.drawImage(fCanvasImg, 0, 0, fw, fh);
+        
+        // Darken unprinted area below the scan line
+        fCtx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        fCtx.fillRect(0, scanY, fw, fh - scanY);
+        
+        // Draw strong prominent red line at current printing position
+        fCtx.beginPath();
+        fCtx.moveTo(0, scanY);
+        fCtx.lineTo(fw, scanY);
+        fCtx.strokeStyle = '#ff1744';
+        fCtx.lineWidth = 3;
+        fCtx.shadowColor = '#ff1744';
+        fCtx.shadowBlur = 12;
+        fCtx.stroke();
+        fCtx.shadowBlur = 0; // reset
     }
 }
 
@@ -584,7 +601,7 @@ function animate(){
   
   if (isRunning && twin.speed > 0 && twin.pattern_matrix && twin.pattern_matrix.length > 0) {
       // 🐢 Slow motion for detailed observation
-      const cycleTime = (twin.speed / 100) * 0.15; // slow speed multiplier
+      const cycleTime = (twin.speed / 100) * 0.15 * globalSpeedMult; // slow speed multiplier
       weavePhase += delta * cycleTime;
       
       // CYCLE WRAP -> DEPOSIT WEFT
@@ -624,13 +641,25 @@ function animate(){
           }
           pts.push(new THREE.Vector3((WARP_COUNT*SPACING)/2 + 0.2, 0, 0));
           
+          const rowHeight = 0.08;
+          const weftGeo = new THREE.PlaneGeometry(WARP_COUNT * SPACING + 0.4, rowHeight);
+          weftGeo.rotateX(-Math.PI/2);
+          
+          const vStart = (totalWefts * rowHeight) % 10.0 / 10.0;
+          const vEnd = ((totalWefts + 1) * rowHeight) % 10.0 / 10.0;
+          const uvs = weftGeo.attributes.uv.array;
+          uvs[1] = vEnd; uvs[3] = vEnd; uvs[5] = vStart; uvs[7] = vStart;
+          weftGeo.attributes.uv.needsUpdate = true;
+          
+          const weft = new THREE.Mesh(weftGeo, sharedPrintedMaterial);
+          weft.position.z = 0.01; // slight offset to prevent z-fighting if threads overlap
+          
           const curve = new THREE.CatmullRomCurve3(pts);
-          const tubeGeo = new THREE.TubeGeometry(curve, WARP_COUNT * 2, THREAD_RADIUS * 0.8, 8, false);
-          
-          let weftMat = MAT.weft;
-          if(brokenSegment) weftMat = new THREE.MeshStandardMaterial({color:0xff1744, roughness:0.5});
-          
-          const weft = new THREE.Mesh(tubeGeo, weftMat);
+          const tubeGeo = new THREE.TubeGeometry(curve, WARP_COUNT * 2, THREAD_RADIUS * 0.3, 4, false);
+          let threadMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent:true, opacity:0.1});
+          if(brokenSegment) threadMat = new THREE.MeshStandardMaterial({color:0xff1744, roughness:0.5});
+          const threadMesh = new THREE.Mesh(tubeGeo, threadMat);
+          weft.add(threadMesh);
           weft.userData.baseZ = fabricZShift; // lock relative position
           fabricGroup.add(weft);
           pastWefts.push(weft);
@@ -744,27 +773,17 @@ updateHUD();
 // Dynamic Overwrite for Depiction / Demonstration
 // Structured weave designs switching predictably
 const structuralPatterns = [
-    // Twill 2/2 Array Map
     [
-        [1,1,0,0,1,1,0,0,1],
-        [0,1,1,0,0,1,1,0,0],
-        [0,0,1,1,0,0,1,1,0],
-        [1,0,0,1,1,0,0,1,1]
+        [1,1,0,0,1,1,0,0,1,1,0,0,1,1,0],
+        [0,1,1,0,0,1,1,0,0,1,1,0,0,1,1],
+        [0,0,1,1,0,0,1,1,0,0,1,1,0,0,1],
+        [1,0,0,1,1,0,0,1,1,0,0,1,1,0,0]
     ],
-    // Basket 2x2 Array Map
     [
-        [1,1,0,0,1,1,0,0,1],
-        [1,1,0,0,1,1,0,0,1],
-        [0,0,1,1,0,0,1,1,0],
-        [0,0,1,1,0,0,1,1,0]
-    ],
-    // Satin 4/1 Array Map
-    [
-        [1,0,0,0,0,1,0,0,0],
-        [0,0,1,0,0,0,0,1,0],
-        [0,0,0,0,1,0,0,0,0],
-        [0,1,0,0,0,0,1,0,0],
-        [0,0,0,1,0,0,0,0,1]
+        [1,1,0,0,1,1,0,0,1,1,0,0,1,1,0],
+        [1,1,0,0,1,1,0,0,1,1,0,0,1,1,0],
+        [0,0,1,1,0,0,1,1,0,0,1,1,0,0,1],
+        [0,0,1,1,0,0,1,1,0,0,1,1,0,0,1]
     ]
 ];
 let activePatternIndex = 0;
@@ -807,6 +826,14 @@ window.addEventListener('message', (event) => {
     if (event.data && event.data.theme) {
         applyTheme(event.data.theme === 'light');
     }
+});
+
+// Speed Button Logic
+document.getElementById('speed-btn').addEventListener('click', function() {
+    globalSpeedMult = globalSpeedMult === 1 ? 2 : 1;
+    this.textContent = globalSpeedMult === 1 ? "Speed 1x" : "Speed 2x";
+    this.style.background = globalSpeedMult === 1 ? "transparent" : "var(--accent)";
+    this.style.color = globalSpeedMult === 1 ? "var(--accent)" : "#000";
 });
 
 </script>
