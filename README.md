@@ -20,7 +20,8 @@ A high-fidelity, real-time, physics-based Digital Twin of a traditional handloom
 ---
 
 ## Overview
-<img width="2816" height="1536" alt="Gemini_Generated_Image_jgfk3jjgfk3jjgfk" src="https://github.com/user-attachments/assets/2a7ae104-404d-46c0-9c43-1b11b00678b9" />
+<img width="1600" height="872" alt="image" src="https://github.com/user-attachments/assets/9ee71524-419f-4f54-bc75-e66f3a23c594" />
+
 
 
 The Handloom Weaving Digital Twin is an industrial IoT simulation platform that mirrors physical loom behavior in a live 3D virtual environment. It connects real-world sensor data through FIWARE's Orion Context Broker, visualizes the weaving process using Three.js WebGL, and provides predictive analytics through machine learning models.
@@ -45,6 +46,7 @@ Traditional handloom weaving is a complex mechanical process that requires preci
 - Visual effects for vibration, temperature, and faults
 
 ### 2. Micro-Level Thread Core View
+<img width="1600" height="804" alt="image" src="https://github.com/user-attachments/assets/941df123-375b-40c1-995a-350e2bfbe1a2" />
 - Zoom into the mechanical shedding, shuttle flight, and beat-up mechanics
 - Visualizes warp/weft interlacing based on active weave patterns (Twill, Satin, Basket)
 - Matrix-based pattern generation for fabric structures
@@ -57,6 +59,7 @@ Traditional handloom weaving is a complex mechanical process that requires preci
 - Support for multiple loom entities
 
 ### 4. Dynamic Physics Engine
+
 - Thread sag visualization based on tension values
 - Catmull-Rom spline-based thread geometry
 - Linear interpolation for smooth shed animations
@@ -241,6 +244,9 @@ UI Dashboard (Digital Twin)
 ---
 
 ## Sandbox Control Panel
+<img width="1919" height="972" alt="Screenshot 2026-05-14 233016" src="https://github.com/user-attachments/assets/6d37d78d-ec89-46f2-a7ff-6e70a5e6ae2a" />
+<img width="1245" height="787" alt="Screenshot 2026-05-14 233107" src="https://github.com/user-attachments/assets/4aed34fe-e9dd-44fa-8550-7e5036d5430b" />
+
 
 The Sandbox Control Panel is a fully isolated simulation environment that operates as a "shadow simulation" without affecting the live production system.
 
